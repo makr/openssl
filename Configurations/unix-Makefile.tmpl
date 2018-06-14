@@ -16,6 +16,10 @@
 
      sub windowsdll { $config{target} =~ /^(?:Cygwin|mingw)/ }
 
+     # Shared AIX support is special. We put libcrypto[64].so.ver into
+     # libcrypto.a and use libcrypto_a.a as static one.
+     sub sharedaix  { !$disabled{shared} && $config{target} =~ /^aix/ }
+
      our $sover_dirname = $config{shlib_version_number};
      $sover_dirname =~ s|\.|_|g
          if $config{target} =~ /^mingw/;
@@ -1103,6 +1107,11 @@ EOF
 	cp -p $shlib'\$(SHLIB_EXT)' test/
 	cp -p $shlib'\$(SHLIB_EXT)' fuzz/
 EOF
+      } elsif (sharedaix()) {
+          $recipe .= <<"EOF";
+	rm -f $target && \\
+	\$(AR) r $target $target_full
+EOF
       } else {
           $recipe .= <<"EOF";
 	if [ '$target' != '$target_full' ]; then \\
@@ -1166,8 +1175,8 @@ EOF
           push @linkdirs, $d unless grep { $d eq $_ } @linkdirs;
       }
       my $linkflags = join("", map { "-L$_ " } @linkdirs);
-      my $linklibs = join("", map { if ($_ =~ /\.a$/) {
-                                        " $_";
+      my $linklibs = join("", map { if ($_ =~ s/\.a$//) {
+                                        " $_$libext";
                                     } else {
                                         my $f = basename($_);
                                         (my $l = $f) =~ s/^lib//;
