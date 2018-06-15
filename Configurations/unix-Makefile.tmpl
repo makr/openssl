@@ -531,6 +531,7 @@ install_dev:
 		$(ECHO) "install $$s1 -> $$a"; \
 		if [ -f $$a ]; then ( trap "rm -rf /tmp/ar.$$$$" INT 0; \
 			mkdir /tmp/ar.$$$$; ( cd /tmp/ar.$$$$; \
+			cp -f $$a $$a.new; \
 			for so in `$(AR) t $$a`; do \
 				$(AR) x $$a $$so; \
 				strip -X32_64 -e $$so; \
